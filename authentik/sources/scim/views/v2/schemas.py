@@ -1,6 +1,7 @@
 """Schema Views"""
 
 from json import loads
+from pathlib import Path
 
 from django.http import Http404
 from django.urls import reverse
@@ -9,7 +10,11 @@ from rest_framework.response import Response
 
 from authentik.sources.scim.views.v2.base import SCIMView
 
-with open("authentik/sources/scim/schemas/schema.json", encoding="utf-8") as SCHEMA_FILE:
+with (
+    Path(__file__)
+    .parent.parent.parent.joinpath("schemas/schema.json")
+    .open("r", encoding="utf-8") as SCHEMA_FILE
+):
     _raw_schemas = loads(SCHEMA_FILE.read())
 
 
