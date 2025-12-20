@@ -47150,6 +47150,9 @@ components:
           type: string
           format: uuid
           nullable: true
+        provider:
+          type: integer
+          nullable: true
     PropertyMappingTestResult:
       type: object
       description: Result of a Property-mapping test

@@ -16,6 +16,9 @@ import {
     PropertymappingsApi,
     PropertyMappingTestRequest,
     PropertyMappingTestResult,
+    Provider,
+    ProvidersAllListRequest,
+    ProvidersApi,
     RbacPermissionsAssignedByUsersListModelEnum,
     User,
 } from "@goauthentik/api";
@@ -178,6 +181,31 @@ export class PolicyTestForm extends Form<PropertyMappingTestRequest> {
                     }}
                     .selected=${(group: Group): boolean => {
                         return this.request?.group?.toString() === group.pk.toString();
+                    }}
+                >
+                </ak-search-select>
+            </ak-form-element-horizontal>
+            <ak-form-element-horizontal label=${msg("Provider")} name="provider">
+                <ak-search-select
+                    blankable
+                    .fetchObjects=${async (query?: string): Promise<Provider[]> => {
+                        const args: ProvidersAllListRequest = {
+                            ordering: "name",
+                        };
+                        if (query !== undefined) {
+                            args.search = query;
+                        }
+                        const providers = await new ProvidersApi(DEFAULT_CONFIG).providersAllList(args);
+                        return providers.results;
+                        }}
+                    .renderElement=${(provider: Provider): string => {
+                        return provider.name;
+                    }}
+                    .value=${(provider: Provider | undefined): number | undefined => {
+                        return provider?.pk;
+                    }}
+                    .selected=${(provider: Provider): boolean => {
+                        return this.request?.provider?.toString() === provider.pk.toString();
                     }}
                 >
                 </ak-search-select>

@@ -31,7 +31,7 @@ from authentik.core.api.utils import (
 )
 from authentik.core.expression.evaluator import PropertyMappingEvaluator
 from authentik.core.expression.exceptions import PropertyMappingExpressionException
-from authentik.core.models import Group, PropertyMapping, User
+from authentik.core.models import Group, PropertyMapping, Provider, User
 from authentik.events.utils import sanitize_item
 from authentik.lib.utils.errors import exception_to_string
 from authentik.policies.api.exec import PolicyTestSerializer
@@ -105,6 +105,9 @@ class PropertyMappingViewSet(
         group = PrimaryKeyRelatedField(
             queryset=Group.objects.all(), required=False, allow_null=True
         )
+        provider = PrimaryKeyRelatedField(
+            queryset=Provider.objects.all().select_subclasses(), required=False, allow_null=True
+        )
 
     queryset = PropertyMapping.objects.select_subclasses()
     serializer_class = PropertyMappingSerializer
@@ -160,6 +163,14 @@ class PropertyMappingViewSet(
             if not groups.exists():
                 raise PermissionDenied()
             context["group"] = group
+        if provider := test_params.validated_data.get("provider"):
+            # Provider permission check, only allow mapping testing for providers that are readable
+            providers = get_objects_for_user(request.user, "authentik_core.view_provider").filter(
+                pk=provider.pk
+            )
+            if not providers.exists():
+                raise PermissionDenied()
+            context["provider"] = provider
         context["request"] = self.request
 
         response_data = {"successful": True, "result": ""}
