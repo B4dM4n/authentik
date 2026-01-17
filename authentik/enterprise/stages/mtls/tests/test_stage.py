@@ -3,7 +3,6 @@ from unittest.mock import MagicMock, patch
 from urllib.parse import quote_plus
 
 from django.urls import reverse
-from guardian.shortcuts import assign_perm
 
 from authentik.core.models import User
 from authentik.core.tests.utils import (
@@ -13,10 +12,10 @@ from authentik.core.tests.utils import (
     create_test_user,
 )
 from authentik.crypto.models import CertificateKeyPair
+from authentik.endpoints.models import StageMode
 from authentik.enterprise.stages.mtls.models import (
     CertAttributes,
     MutualTLSStage,
-    TLSMode,
     UserAttributes,
 )
 from authentik.enterprise.stages.mtls.stage import PLAN_CONTEXT_CERTIFICATE
@@ -40,7 +39,7 @@ class MTLSStageTests(FlowTestCase):
         )
         self.stage = MutualTLSStage.objects.create(
             name=generate_id(),
-            mode=TLSMode.REQUIRED,
+            mode=StageMode.REQUIRED,
             cert_attribute=CertAttributes.COMMON_NAME,
             user_attribute=UserAttributes.USERNAME,
         )
@@ -92,7 +91,7 @@ class MTLSStageTests(FlowTestCase):
     def test_parse_outpost_object(self):
         """Test outposts's format"""
         outpost = Outpost.objects.create(name=generate_id(), type=OutpostType.PROXY)
-        assign_perm("pass_outpost_certificate", outpost.user, self.stage)
+        outpost.user.assign_perms_to_managed_role("pass_outpost_certificate", self.stage)
         with patch(
             "authentik.root.middleware.ClientIPMiddleware.get_outpost_user",
             MagicMock(return_value=outpost.user),
@@ -109,7 +108,7 @@ class MTLSStageTests(FlowTestCase):
     def test_parse_outpost_global(self):
         """Test outposts's format"""
         outpost = Outpost.objects.create(name=generate_id(), type=OutpostType.PROXY)
-        assign_perm("authentik_stages_mtls.pass_outpost_certificate", outpost.user)
+        outpost.user.assign_perms_to_managed_role("authentik_stages_mtls.pass_outpost_certificate")
         with patch(
             "authentik.root.middleware.ClientIPMiddleware.get_outpost_user",
             MagicMock(return_value=outpost.user),
@@ -178,7 +177,7 @@ class MTLSStageTests(FlowTestCase):
 
     def test_no_ca_optional(self):
         """Test using no CA Set"""
-        self.stage.mode = TLSMode.OPTIONAL
+        self.stage.mode = StageMode.OPTIONAL
         self.stage.certificate_authorities.clear()
         self.stage.save()
         res = self.client.get(
@@ -201,7 +200,7 @@ class MTLSStageTests(FlowTestCase):
 
     def test_no_cert_optional(self):
         """Test using no cert Set"""
-        self.stage.mode = TLSMode.OPTIONAL
+        self.stage.mode = StageMode.OPTIONAL
         self.stage.save()
         res = self.client.get(
             reverse("authentik_api:flow-executor", kwargs={"flow_slug": self.flow.slug}),

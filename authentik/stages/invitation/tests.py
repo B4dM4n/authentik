@@ -9,6 +9,7 @@ from django.utils.timezone import now
 from guardian.shortcuts import get_anonymous_user
 from rest_framework.test import APITestCase
 
+from authentik.blueprints.v1.importer import SERIALIZER_CONTEXT_BLUEPRINT
 from authentik.core.tests.utils import create_test_admin_user, create_test_flow
 from authentik.flows.markers import StageMarker
 from authentik.flows.models import FlowDesignation, FlowStageBinding
@@ -16,6 +17,7 @@ from authentik.flows.planner import PLAN_CONTEXT_PENDING_USER, FlowPlan
 from authentik.flows.tests import FlowTestCase
 from authentik.flows.tests.test_executor import TO_STAGE_RESPONSE_MOCK
 from authentik.flows.views.executor import SESSION_KEY_PLAN
+from authentik.stages.invitation.api import InvitationSerializer
 from authentik.stages.invitation.models import Invitation, InvitationStage
 from authentik.stages.invitation.stage import (
     PLAN_CONTEXT_INVITATION_TOKEN,
@@ -198,3 +200,20 @@ class TestInvitationsAPI(APITestCase):
         )
         self.assertEqual(response.status_code, 201)
         self.assertEqual(Invitation.objects.first().created_by, self.user)
+
+    def test_invite_create_blueprint_context(self):
+        """Test Invitations creation via blueprint context"""
+
+        flow = create_test_flow(FlowDesignation.ENROLLMENT)
+        data = {
+            "name": "test-blueprint-invitation",
+            "flow": flow.pk.hex,
+            "single_use": True,
+            "fixed_data": {"email": "test@example.com"},
+        }
+        serializer = InvitationSerializer(data=data, context={SERIALIZER_CONTEXT_BLUEPRINT: True})
+        self.assertTrue(serializer.is_valid())
+        invitation = serializer.save()
+        self.assertEqual(invitation.created_by, get_anonymous_user())
+        self.assertEqual(invitation.name, "test-blueprint-invitation")
+        self.assertEqual(invitation.fixed_data, {"email": "test@example.com"})

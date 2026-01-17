@@ -6,13 +6,13 @@ import Styles from "./ak-library-impl.css";
 import AKLibraryApplicationListStyles from "./ApplicationList.css";
 import { AKLibraryApplicationList } from "./ApplicationList.js";
 import { appHasLaunchUrl } from "./LibraryPageImpl.utils.js";
-import type { PageUIConfig } from "./types.js";
 
 import { groupBy } from "#common/utils";
 
 import { AKSkipToContent } from "#elements/a11y/ak-skip-to-content";
 import { AKElement } from "#elements/Base";
 import { intersectionObserver } from "#elements/decorators/intersection-observer";
+import { canAccessAdmin, WithSession } from "#elements/mixins/session";
 import { getURLParam, updateURLParams } from "#elements/router/RouteMatch";
 import { ifPresent } from "#elements/utils/attributes";
 import { FocusTarget } from "#elements/utils/focus";
@@ -53,7 +53,7 @@ import PFSpacing from "@patternfly/patternfly/utilities/Spacing/spacing.css";
  *
  */
 @customElement("ak-library-impl")
-export class LibraryPage extends AKElement {
+export class LibraryPage extends WithSession(AKElement) {
     /**
      * Maximum number of items to show in the datalist for search suggestions.
      */
@@ -88,11 +88,10 @@ export class LibraryPage extends AKElement {
 
     /**
      * Controls showing the "Switch to Admin" button.
-     *
-     * @attr
      */
-    @property({ type: Boolean })
-    public admin = false;
+    public get admin() {
+        return canAccessAdmin(this.currentUser);
+    }
 
     #applications: Application[] = [];
 
@@ -112,16 +111,8 @@ export class LibraryPage extends AKElement {
         this.fuse.setCollection(this.searchEnabled ? this.#applications : []);
     }
 
-    /**
-     * The aggregate uiConfig, derived from user, brand, and instance data.
-     *
-     * @attr
-     */
-    @property({ attribute: false })
-    public uiConfig!: PageUIConfig;
-
     public get searchEnabled(): boolean {
-        return this.uiConfig?.searchEnabled ?? true;
+        return this.uiConfig.enabledFeatures.search ?? true;
     }
 
     //#endregion
@@ -289,8 +280,10 @@ export class LibraryPage extends AKElement {
     //#region Rendering
 
     renderApps() {
-        const { selectedApp } = this;
-        const { layout, background } = this.uiConfig;
+        const { currentUser, selectedApp } = this;
+        const { layout, theme, enabledFeatures } = this.uiConfig;
+
+        const editable = currentUser?.isSuperuser && enabledFeatures.applicationEdit;
 
         const groupedApps = groupBy(this.visibleApplications, (app) => app.group || "").sort(
             ([groupLabelA, groupAppsA], [groupLabelB, groupAppsB]) => {
@@ -304,8 +297,9 @@ export class LibraryPage extends AKElement {
         );
 
         return AKLibraryApplicationList({
-            layout,
-            background,
+            editable,
+            layout: layout.type,
+            background: theme.cardBackground,
             selectedApp,
             groupedApps,
             targetRef: this.targetRef,

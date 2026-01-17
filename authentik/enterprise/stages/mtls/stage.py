@@ -19,10 +19,10 @@ from django.utils.translation import gettext_lazy as _
 from authentik.brands.models import Brand
 from authentik.core.models import User
 from authentik.crypto.models import CertificateKeyPair, fingerprint_sha256, format_cert
+from authentik.endpoints.models import StageMode
 from authentik.enterprise.stages.mtls.models import (
     CertAttributes,
     MutualTLSStage,
-    TLSMode,
     UserAttributes,
 )
 from authentik.flows.challenge import AccessDeniedChallenge
@@ -192,6 +192,7 @@ class MTLSStageView(ChallengeStageView):
         self.executor.plan.context[PLAN_CONTEXT_METHOD_ARGS].update(
             {"certificate": self._cert_to_dict(cert)}
         )
+        self.executor.plan.context[PLAN_CONTEXT_CERTIFICATE] = self._cert_to_dict(cert)
 
     def enroll_prepare_user(self, cert: Certificate):
         self.executor.plan.context.setdefault(PLAN_CONTEXT_PROMPT, {})
@@ -227,12 +228,12 @@ class MTLSStageView(ChallengeStageView):
         authorities = self.get_authorities()
         if not authorities:
             self.logger.warning("No Certificate authority found")
-            if stage.mode == TLSMode.OPTIONAL:
+            if stage.mode == StageMode.OPTIONAL:
                 return self.executor.stage_ok()
-            if stage.mode == TLSMode.REQUIRED:
+            if stage.mode == StageMode.REQUIRED:
                 return super().dispatch(request, *args, **kwargs)
         cert = self.validate_cert(authorities, certs)
-        if not cert and stage.mode == TLSMode.REQUIRED:
+        if not cert and stage.mode == StageMode.REQUIRED:
             self.logger.warning("Client certificate required but no certificates given")
             return super().dispatch(
                 request,
@@ -240,7 +241,7 @@ class MTLSStageView(ChallengeStageView):
                 error_message=_("Certificate required but no certificate was given."),
                 **kwargs,
             )
-        if not cert and stage.mode == TLSMode.OPTIONAL:
+        if not cert and stage.mode == StageMode.OPTIONAL:
             self.logger.info("No certificate given, continuing")
             return self.executor.stage_ok()
         self.logger.debug("Received certificate", cert=fingerprint_sha256(cert))

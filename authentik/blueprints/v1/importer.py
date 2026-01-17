@@ -16,8 +16,7 @@ from django.db.models.query_utils import Q
 from django.db.transaction import atomic
 from django.db.utils import IntegrityError
 from django_channels_postgres.models import GroupChannel, Message
-from guardian.models import UserObjectPermission
-from guardian.shortcuts import assign_perm
+from guardian.models import RoleObjectPermission, UserObjectPermission
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import BaseSerializer, Serializer
 from structlog.stdlib import BoundLogger, get_logger
@@ -42,6 +41,15 @@ from authentik.core.models import (
     User,
     UserSourceConnection,
 )
+from authentik.endpoints.connectors.agent.models import (
+    AgentDeviceConnection,
+    AppleNonce,
+    DeviceAuthenticationToken,
+)
+from authentik.endpoints.connectors.agent.models import (
+    DeviceToken as EndpointDeviceToken,
+)
+from authentik.endpoints.models import Connector, Device, DeviceConnection, DeviceFactSnapshot
 from authentik.enterprise.license import LicenseKey
 from authentik.enterprise.models import LicenseUsage
 from authentik.enterprise.providers.google_workspace.models import (
@@ -101,6 +109,7 @@ def excluded_models() -> list[type[Model]]:
         DjangoGroup,
         ContentType,
         Permission,
+        RoleObjectPermission,
         UserObjectPermission,
         # Base classes
         Provider,
@@ -112,6 +121,7 @@ def excluded_models() -> list[type[Model]]:
         OutpostServiceConnection,
         Policy,
         PolicyBindingModel,
+        Connector,
         # Classes that have other dependencies
         Session,
         AuthenticatedSession,
@@ -139,6 +149,13 @@ def excluded_models() -> list[type[Model]]:
         MicrosoftEntraProviderGroup,
         EndpointDevice,
         EndpointDeviceConnection,
+        EndpointDeviceToken,
+        Device,
+        DeviceConnection,
+        DeviceAuthenticationToken,
+        AppleNonce,
+        AgentDeviceConnection,
+        DeviceFactSnapshot,
         DeviceToken,
         StreamEvent,
         UserConsent,
@@ -313,6 +330,7 @@ class Importer:
 
         serializer_kwargs = {}
         model_instance = existing_models.first()
+        override_serializer_instance = False
         if (
             not isinstance(model(), BaseMetaModel)
             and model_instance
@@ -341,11 +359,7 @@ class Importer:
                 model=model,
                 **cleanse_dict(updated_identifiers),
             )
-            model_instance = model()
-            # pk needs to be set on the model instance otherwise a new one will be generated
-            if "pk" in updated_identifiers:
-                model_instance.pk = updated_identifiers["pk"]
-            serializer_kwargs["instance"] = model_instance
+            override_serializer_instance = True
         try:
             full_data = self.__update_pks_for_attrs(entry.get_attrs(self._import))
         except ValueError as exc:
@@ -368,16 +382,24 @@ class Importer:
                 entry=entry,
                 serializer=serializer,
             ) from exc
+        if override_serializer_instance:
+            model_instance = model()
+            # pk needs to be set on the model instance otherwise a new one will be generated
+            if "pk" in updated_identifiers:
+                model_instance.pk = updated_identifiers["pk"]
+            serializer.instance = model_instance
         return serializer
 
     def _apply_permissions(self, instance: Model, entry: BlueprintEntry):
         """Apply object-level permissions for an entry"""
         for perm in entry.get_permissions(self._import):
             if perm.user is not None:
-                assign_perm(perm.permission, User.objects.get(pk=perm.user), instance)
+                User.objects.get(pk=perm.user).assign_perms_to_managed_role(
+                    perm.permission, instance
+                )
             if perm.role is not None:
                 role = Role.objects.get(pk=perm.role)
-                role.assign_permission(perm.permission, obj=instance)
+                role.assign_perms(perm.permission, obj=instance)
 
     def apply(self) -> bool:
         """Apply (create/update) models yaml, in database transaction"""
@@ -446,7 +468,7 @@ class Importer:
                 self._apply_permissions(instance, entry)
             elif state == BlueprintEntryDesiredState.ABSENT:
                 instance: Model | None = serializer.instance
-                if instance.pk:
+                if instance and instance.pk:
                     instance.delete()
                     self.logger.debug("Deleted model", mode=instance)
                     continue

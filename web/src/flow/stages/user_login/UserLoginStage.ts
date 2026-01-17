@@ -1,6 +1,7 @@
 import "#flow/FormStatic";
 import "#flow/components/ak-flow-card";
 
+import { FlowUserDetails } from "#flow/FormStatic";
 import { BaseStage } from "#flow/stages/base";
 
 import { UserLoginChallenge, UserLoginChallengeResponseRequest } from "@goauthentik/api";
@@ -8,7 +9,6 @@ import { UserLoginChallenge, UserLoginChallengeResponseRequest } from "@goauthen
 import { msg } from "@lit/localize";
 import { CSSResult, html, TemplateResult } from "lit";
 import { customElement } from "lit/decorators.js";
-import { ifDefined } from "lit/directives/if-defined.js";
 
 import PFButton from "@patternfly/patternfly/components/Button/button.css";
 import PFForm from "@patternfly/patternfly/components/Form/form.css";
@@ -40,26 +40,18 @@ export class PasswordStage extends BaseStage<
                 @submit=${(event: SubmitEvent) => {
                     event.preventDefault();
 
-                    const rememberMe = typeof event.submitter?.dataset.rememberMe === "string";
+                    const submitter =
+                        event.submitter instanceof HTMLButtonElement ? event.submitter : null;
 
                     this.submitForm(event, {
-                        rememberMe,
+                        rememberMe: submitter?.name === "remember-me",
                     });
                 }}
             >
-                <ak-form-static
-                    class="pf-c-form__group"
-                    userAvatar="${this.challenge.pendingUserAvatar}"
-                    user=${this.challenge.pendingUser}
-                >
-                    <div slot="link">
-                        <a href="${ifDefined(this.challenge.flowInfo?.cancelUrl)}"
-                            >${msg("Not you?")}</a
-                        >
-                    </div>
-                </ak-form-static>
+                ${FlowUserDetails({ challenge: this.challenge })}
+
                 <div class="pf-c-form__group">
-                    <h3 id="header-text" class="pf-c-title pf-m-xl pf-u-mb-xl">
+                    <h3 data-test-id="stage-heading" class="pf-c-title pf-m-xl pf-u-mb-xl">
                         ${msg("Stay signed in?")}
                     </h3>
                     <p class="pf-u-mb-sm">
@@ -69,10 +61,12 @@ export class PasswordStage extends BaseStage<
 
                 <fieldset class="pf-c-form__group pf-m-action">
                     <legend class="sr-only">${msg("Form actions")}</legend>
-                    <button type="submit" data-remember-me class="pf-c-button pf-m-primary">
+                    <button name="remember-me" type="submit" class="pf-c-button pf-m-primary">
                         ${msg("Yes")}
                     </button>
-                    <button type="submit" class="pf-c-button pf-m-secondary">${msg("No")}</button>
+                    <button name="forget-me" type="submit" class="pf-c-button pf-m-secondary">
+                        ${msg("No")}
+                    </button>
                 </fieldset>
             </form>
         </ak-flow-card>`;

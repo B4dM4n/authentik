@@ -23,6 +23,8 @@ import { ascii_letters, digits, randomString } from "#common/utils";
 import { RadioOption } from "#elements/forms/Radio";
 import { ifPresent } from "#elements/utils/attributes";
 
+import { AKLabel } from "#components/ak-label";
+
 import {
     ClientTypeEnum,
     FlowsInstancesListDesignationEnum,
@@ -149,19 +151,27 @@ export function renderForm({
 }: OAuth2ProviderFormProps) {
     return html` <ak-text-input
             name="name"
-            placeholder=${msg("Provider name...")}
+            placeholder=${msg("Type a provider name...")}
+            autocomplete="off"
             label=${msg("Provider Name")}
             value=${ifDefined(provider.name)}
             .errorMessages=${errors.name}
             required
         ></ak-text-input>
 
-        <ak-form-element-horizontal
-            name="authorizationFlow"
-            label=${msg("Authorization flow")}
-            required
-        >
+        <ak-form-element-horizontal name="authorizationFlow" required>
+            ${AKLabel(
+                {
+                    className: "pf-c-form__group-label",
+                    slot: "label",
+                    htmlFor: "authorizationFlow",
+                    required: true,
+                },
+                msg("Authorization flow"),
+            )}
+
             <ak-flow-search
+                id="authorizationFlow"
                 label=${msg("Authorization flow")}
                 placeholder=${msg("Select an authorization flow...")}
                 flowType=${FlowsInstancesListDesignationEnum.Authorization}
@@ -231,7 +241,8 @@ export function renderForm({
                     name="logoutUri"
                     value="${provider?.logoutUri ?? ""}"
                     input-hint="code"
-                    placeholder="https://..."
+                    inputmode="url"
+                    placeholder=${msg("https://...")}
                     .help=${msg(
                         "URI to send logout notifications to when users log out. Required for OpenID Connect Logout functionality.",
                     )}
