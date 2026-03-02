@@ -13,6 +13,8 @@ from lxml import etree  # nosec
 from lxml.etree import Element, SubElement, _Element  # nosec
 from requests.exceptions import ConnectionError, HTTPError, RequestException, Timeout
 
+from authentik.admin.files.manager import get_file_manager
+from authentik.admin.files.usage import FileUsage
 from authentik.lib.utils.dict import get_path_from_dict
 from authentik.lib.utils.http import get_http_session
 from authentik.tenants.utils import get_current_tenant
@@ -46,6 +48,14 @@ def avatar_mode_attribute(user: User, mode: str) -> str | None:
     """Avatars based on a user attribute"""
     avatar = get_path_from_dict(user.attributes, mode[11:], default=None)
     return avatar
+
+
+def avatar_mode_media_attribute(user: User, mode: str) -> str | None:
+    """Avatars based on a user attribute media file"""
+    if filename := get_path_from_dict(user.attributes, mode[17:], default=None):
+        return get_file_manager(FileUsage.MEDIA).file_url(filename)
+
+    return None
 
 
 def avatar_mode_gravatar(user: User, mode: str) -> str | None:
@@ -216,6 +226,8 @@ def get_avatar(user: User, request: HttpRequest | None = None) -> str:
             avatar = mode_map[mode](user, mode)
         elif mode.startswith("attributes."):
             avatar = avatar_mode_attribute(user, mode)
+        elif mode.startswith("media-attributes."):
+            avatar = avatar_mode_media_attribute(user, mode)
         elif "://" in mode:
             avatar = avatar_mode_url(user, mode)
         if avatar:
