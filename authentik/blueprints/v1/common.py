@@ -280,16 +280,21 @@ class File(YAMLTag):
             self.path = node.value
         if isinstance(node, SequenceNode):
             self.path = loader.construct_object(node.value[0])
-            self.default = loader.construct_object(node.value[1])
+            if len(node.value) == 2:
+                self.default = loader.construct_object(node.value[1])
 
     def resolve(self, entry: BlueprintEntry, blueprint: Blueprint) -> Any:
+        if isinstance(self.path, YAMLTag):
+            path = self.path.resolve(entry, blueprint)
+        else:
+            path = self.path
         try:
-            with open(self.path, encoding="utf8") as _file:
+            with open(path, encoding="utf8") as _file:
                 return _file.read().strip()
         except OSError as exc:
             LOGGER.warning(
                 "Failed to read file. Falling back to default value",
-                path=self.path,
+                path=path,
                 exc=exc,
             )
             return self.default
