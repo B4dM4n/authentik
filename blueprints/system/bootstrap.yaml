@@ -11,7 +11,9 @@ context:
   group_name: authentik Admins
   email: !Env [AUTHENTIK_BOOTSTRAP_EMAIL, "root@example.com"]
   password: !Env [AUTHENTIK_BOOTSTRAP_PASSWORD, null]
+  password_file: !Env [AUTHENTIK_BOOTSTRAP_PASSWORD_FILE, null]
   token: !Env [AUTHENTIK_BOOTSTRAP_TOKEN, null]
+  token_file: !Env [AUTHENTIK_BOOTSTRAP_TOKEN_FILE, null]
 entries:
   - model: authentik_core.group
     state: created
@@ -30,15 +32,21 @@ entries:
       email: !Context email
       groups:
         - !KeyOf admin-group
-      password: !Context password
+      password:
+        !If [
+          !Context password_file,
+          !File [!Context password_file],
+          !Context password,
+        ]
   - model: authentik_core.token
     state: created
     conditions:
-      - !If [!Context token]
+      - !Condition [OR, !Context token, !Context token_file]
     identifiers:
       identifier: authentik-bootstrap-token
       intent: api
       expiring: false
       user: !KeyOf admin-user
     attrs:
-      key: !Context token
+      key:
+        !If [!Context token_file, !File [!Context token_file], !Context token]
