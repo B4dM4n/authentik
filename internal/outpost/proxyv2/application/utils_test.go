@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"goauthentik.io/api/v3"
 	"goauthentik.io/internal/outpost/proxyv2/constants"
+	api "goauthentik.io/packages/client-go"
 )
 
 func TestRedirectToStart_Proxy(t *testing.T) {
@@ -64,7 +64,7 @@ func TestRedirectToStart_Forward(t *testing.T) {
 
 func TestRedirectToStart_Forward_Domain_Invalid(t *testing.T) {
 	a := newTestApplication()
-	a.proxyConfig.CookieDomain = api.PtrString("foo")
+	a.proxyConfig.CookieDomain = new("foo")
 	a.proxyConfig.Mode = api.PROXYMODE_FORWARD_DOMAIN.Ptr()
 	a.proxyConfig.ExternalHost = "https://test.goauthentik.io"
 	req, _ := http.NewRequest("GET", "/foo/bar/baz", nil)
@@ -82,7 +82,7 @@ func TestRedirectToStart_Forward_Domain_Invalid(t *testing.T) {
 
 func TestRedirectToStart_Forward_Domain(t *testing.T) {
 	a := newTestApplication()
-	a.proxyConfig.CookieDomain = api.PtrString("goauthentik.io")
+	a.proxyConfig.CookieDomain = new("goauthentik.io")
 	a.proxyConfig.Mode = api.PROXYMODE_FORWARD_DOMAIN.Ptr()
 	a.proxyConfig.ExternalHost = "https://test.goauthentik.io"
 	req, _ := http.NewRequest("GET", "/foo/bar/baz", nil)

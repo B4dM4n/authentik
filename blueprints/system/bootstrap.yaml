@@ -12,6 +12,7 @@ context:
   email: !Env [AUTHENTIK_BOOTSTRAP_EMAIL, "root@example.com"]
   password: !Env [AUTHENTIK_BOOTSTRAP_PASSWORD, null]
   password_file: !Env [AUTHENTIK_BOOTSTRAP_PASSWORD_FILE, null]
+  password_hash: !Env [AUTHENTIK_BOOTSTRAP_PASSWORD_HASH, null]
   token: !Env [AUTHENTIK_BOOTSTRAP_TOKEN, null]
   token_file: !Env [AUTHENTIK_BOOTSTRAP_TOKEN_FILE, null]
 entries:
@@ -38,6 +39,7 @@ entries:
           !File [!Context password_file],
           !Context password,
         ]
+      password_hash: !Context password_hash
   - model: authentik_core.token
     state: created
     conditions:

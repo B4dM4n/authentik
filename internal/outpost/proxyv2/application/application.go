@@ -23,7 +23,6 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	"goauthentik.io/api/v3"
 	"goauthentik.io/internal/config"
 	"goauthentik.io/internal/outpost/ak"
 	"goauthentik.io/internal/outpost/proxyv2/hs256"
@@ -31,6 +30,7 @@ import (
 	"goauthentik.io/internal/outpost/proxyv2/templates"
 	"goauthentik.io/internal/outpost/proxyv2/types"
 	"goauthentik.io/internal/utils/web"
+	api "goauthentik.io/packages/client-go"
 	"golang.org/x/oauth2"
 )
 
@@ -249,7 +249,7 @@ func NewApplication(p api.ProxyOutpostConfig, c *http.Client, server Server, old
 
 	if *p.SkipPathRegex != "" {
 		a.UnauthenticatedRegex = make([]*regexp.Regexp, 0)
-		for _, regex := range strings.Split(*p.SkipPathRegex, "\n") {
+		for regex := range strings.SplitSeq(*p.SkipPathRegex, "\n") {
 			re, err := regexp.Compile(regex)
 			if err != nil {
 				// TODO: maybe create event for this?

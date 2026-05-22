@@ -16,16 +16,16 @@ export interface APIResultError {
     error: APIError;
 }
 
-export type APIResultSucccess<T extends object = object> = T & {
+export type APIResultSuccess<T extends object = object> = T & {
     error?: null;
     loading?: false;
 };
 
-export type APIResult<T extends object> = APIResultLoading | APIResultError | APIResultSucccess<T>;
+export type APIResult<T extends object> = APIResultLoading | APIResultError | APIResultSuccess<T>;
 
 export function isAPIResultReady<T extends object>(
     result: APIResult<T> | null | undefined,
-): result is APIResultSucccess<T> {
+): result is APIResultSuccess<T> {
     return !!(result && result.loading !== false && result.error !== null);
 }
 
@@ -50,9 +50,9 @@ export interface PaginatedResponse<T, A extends object = object> {
  * @param input An iterable of items to include in the results array.
  */
 export function createPaginatedResponse<T = unknown, A extends object = object>(
-    input: Iterable<T> = [],
+    input?: Iterable<T> | null,
 ): PaginatedResponse<T, A> {
-    const results = Array.from(input);
+    const results = Array.from(input ?? []);
 
     return {
         pagination: {
