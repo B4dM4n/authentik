@@ -1,4 +1,7 @@
+import "#elements/forms/HorizontalFormElement";
+import "#components/ak-switch-input";
 import "#elements/buttons/ActionButton/ak-action-button";
+import "@patternfly/elements/pf-tooltip/pf-tooltip.js";
 
 import { DEFAULT_CONFIG } from "#common/api/config";
 import { globalAK } from "#common/global";
@@ -26,7 +29,6 @@ import PFDrawer from "@patternfly/patternfly/components/Drawer/drawer.css";
 import PFDropdown from "@patternfly/patternfly/components/Dropdown/dropdown.css";
 import PFNotificationBadge from "@patternfly/patternfly/components/NotificationBadge/notification-badge.css";
 import PFPage from "@patternfly/patternfly/components/Page/page.css";
-import PFBase from "@patternfly/patternfly/patternfly-base.css";
 import PFDisplay from "@patternfly/patternfly/utilities/Display/display.css";
 
 @customElement("ak-nav-buttons")
@@ -38,7 +40,6 @@ export class NavigationButtons extends WithNotifications(WithSession(AKElement))
     apiDrawerOpen = false;
 
     static styles = [
-        PFBase,
         PFDisplay,
         PFBrand,
         PFPage,
@@ -73,7 +74,17 @@ export class NavigationButtons extends WithNotifications(WithSession(AKElement))
                         content=${msg("API Drawer")}
                         trigger="api-drawer-toggle-button"
                     >
-                        <i class="fas fa-code" aria-hidden="true"></i>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="ak-c-vector-icon"
+                            fill="currentColor"
+                            aria-hidden="true"
+                            viewBox="0 0 32 32"
+                        >
+                            <path
+                                d="M8 9H4a2 2 0 0 0-2 2v12h2v-5h4v5h2V11a2 2 0 0 0-2-2m-4 7v-5h4v5ZM22 11h3v10h-3v2h8v-2h-3V11h3V9h-8zM14 23h-2V9h6a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-4Zm0-7h4v-5h-4Z"
+                            />
+                        </svg>
                     </pf-tooltip>
                 </button>
             </div>`;
@@ -196,6 +207,7 @@ export class NavigationButtons extends WithNotifications(WithSession(AKElement))
                     <a
                         href="${globalAK().api.base}flows/-/default/invalidation/"
                         class="pf-c-button pf-m-plain"
+                        aria-label=${msg("Sign out")}
                     >
                         <pf-tooltip position="top" content=${msg("Sign out")}>
                             <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
@@ -213,6 +225,13 @@ export class NavigationButtons extends WithNotifications(WithSession(AKElement))
                   </div>`
                 : nothing}
             ${this.renderAvatar()}
+            <slot></slot>
         </div>`;
+    }
+}
+
+declare global {
+    interface HTMLElementTagNameMap {
+        "ak-nav-buttons": NavigationButtons;
     }
 }

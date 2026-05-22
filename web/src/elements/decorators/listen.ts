@@ -88,7 +88,7 @@ function registerEventCallbacks<T extends ListenerMixin>(target: T): ListenDecor
 
         // Register all listeners
         for (const [propKey, eventType] of propToEventName) {
-            const { target = window, ...options } = propToOptions.get(propKey) || {};
+            const { target: eventTarget = this, ...options } = propToOptions.get(propKey) || {};
             const listener = this[propKey as keyof T];
 
             if (!listener) {
@@ -105,7 +105,8 @@ function registerEventCallbacks<T extends ListenerMixin>(target: T): ListenDecor
                 );
             }
 
-            target.addEventListener(eventType, listener, {
+            eventTarget.addEventListener(eventType, listener, {
+                passive: true,
                 ...options,
                 signal: abortController.signal,
             });

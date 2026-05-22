@@ -57,7 +57,7 @@ export class DataExportListPage extends TablePage<DataExport> {
     renderToolbarSelected(): TemplateResult {
         const disabled = this.selectedElements.length < 1;
         return html`<ak-forms-delete-bulk
-            objectLabel=${msg("Data export(s)")}
+            object-label=${msg("Data export(s)")}
             .objects=${this.selectedElements}
             .metadata=${(item: DataExport) => {
                 return [
@@ -120,7 +120,7 @@ export class DataExportListPage extends TablePage<DataExport> {
         </dl>`;
     }
 
-    protected renderEmpty(_inner?: TemplateResult): TemplateResult {
+    protected renderEmpty(_inner?: TemplateResult): SlottedTemplateResult {
         return super.renderEmpty(
             html`<ak-empty-state icon=${this.pageIcon}
                 ><span

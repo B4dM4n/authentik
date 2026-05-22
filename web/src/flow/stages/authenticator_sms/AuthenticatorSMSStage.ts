@@ -1,6 +1,8 @@
 import "#flow/FormStatic";
 import "#flow/components/ak-flow-card";
 
+import { SlottedTemplateResult } from "#elements/types";
+
 import { AKFormErrors } from "#components/ak-field-errors";
 import { AKLabel } from "#components/ak-label";
 
@@ -13,7 +15,7 @@ import {
 } from "@goauthentik/api";
 
 import { msg } from "@lit/localize";
-import { CSSResult, html, TemplateResult } from "lit";
+import { CSSResult, html, nothing } from "lit";
 import { customElement } from "lit/decorators.js";
 
 import PFAlert from "@patternfly/patternfly/components/Alert/alert.css";
@@ -23,7 +25,6 @@ import PFFormControl from "@patternfly/patternfly/components/FormControl/form-co
 import PFInputGroup from "@patternfly/patternfly/components/InputGroup/input-group.css";
 import PFLogin from "@patternfly/patternfly/components/Login/login.css";
 import PFTitle from "@patternfly/patternfly/components/Title/title.css";
-import PFBase from "@patternfly/patternfly/patternfly-base.css";
 
 @customElement("ak-stage-authenticator-sms")
 export class AuthenticatorSMSStage extends BaseStage<
@@ -31,7 +32,6 @@ export class AuthenticatorSMSStage extends BaseStage<
     AuthenticatorSMSChallengeResponseRequest
 > {
     static styles: CSSResult[] = [
-        PFBase,
         PFAlert,
         PFLogin,
         PFForm,
@@ -41,7 +41,10 @@ export class AuthenticatorSMSStage extends BaseStage<
         PFButton,
     ];
 
-    renderPhoneNumber(): TemplateResult {
+    protected renderPhoneNumber(): SlottedTemplateResult {
+        if (!this.challenge) {
+            return nothing;
+        }
         return html`<ak-flow-card .challenge=${this.challenge}>
             <form class="pf-c-form" @submit=${this.submitForm}>
                 ${FlowUserDetails({ challenge: this.challenge })}
@@ -64,7 +67,7 @@ export class AuthenticatorSMSStage extends BaseStage<
                     ${AKFormErrors({ errors: this.challenge.responseErrors?.phone_number })}
                 </div>
                 ${this.renderNonFieldErrors()}
-                <fieldset class="pf-c-form__group pf-m-action">
+                <fieldset class="ak-c-fieldset pf-c-form__group pf-m-action">
                     <legend class="sr-only">${msg("Form actions")}</legend>
                     <button
                         name="continue"
@@ -78,7 +81,11 @@ export class AuthenticatorSMSStage extends BaseStage<
         </ak-flow-card>`;
     }
 
-    renderCode(): TemplateResult {
+    protected renderCode(): SlottedTemplateResult {
+        if (!this.challenge) {
+            return nothing;
+        }
+
         return html`<ak-flow-card .challenge=${this.challenge}>
             <form class="pf-c-form" @submit=${this.submitForm}>
                 ${FlowUserDetails({ challenge: this.challenge })}
@@ -99,7 +106,7 @@ export class AuthenticatorSMSStage extends BaseStage<
                     ${AKFormErrors({ errors: this.challenge.responseErrors?.code })}
                 </div>
                 ${this.renderNonFieldErrors()}
-                <fieldset class="pf-c-form__group pf-m-action">
+                <fieldset class="ak-c-fieldset pf-c-form__group pf-m-action">
                     <legend class="sr-only">${msg("Form actions")}</legend>
                     <button
                         name="continue"
@@ -113,13 +120,16 @@ export class AuthenticatorSMSStage extends BaseStage<
         </ak-flow-card>`;
     }
 
-    render(): TemplateResult {
-        if (this.challenge.phoneNumberRequired) {
+    render(): SlottedTemplateResult {
+        if (this.challenge?.phoneNumberRequired) {
             return this.renderPhoneNumber();
         }
+
         return this.renderCode();
     }
 }
+
+export default AuthenticatorSMSStage;
 
 declare global {
     interface HTMLElementTagNameMap {

@@ -22,10 +22,19 @@ const EXPIRATION_DURATION = 30 * 60 * 1000; // 30 minutes
 
 @customElement("ak-token-form")
 export class TokenForm extends ModelForm<Token, string> {
+    public static override verboseName = msg("Token");
+    public static override verboseNamePlural = msg("Tokens");
+
     protected expirationMinimumDate = new Date();
 
     @state()
     protected expiresAt: Date | null = new Date(Date.now() + EXPIRATION_DURATION);
+
+    public override reset(): void {
+        super.reset();
+
+        this.expiresAt = new Date(Date.now() + EXPIRATION_DURATION);
+    }
 
     async loadInstance(pk: string): Promise<Token> {
         const token = await new CoreApi(DEFAULT_CONFIG).coreTokensRetrieve({
@@ -79,7 +88,7 @@ export class TokenForm extends ModelForm<Token, string> {
 
     //#region Renders
 
-    renderForm(): TemplateResult {
+    protected override renderForm(): TemplateResult {
         return html`<ak-text-input
                 name="identifier"
                 value="${this.instance?.identifier ?? ""}"
@@ -94,6 +103,7 @@ export class TokenForm extends ModelForm<Token, string> {
 
             <ak-form-element-horizontal label=${msg("User")} required name="user">
                 <ak-search-select
+                    placeholder=${msg("Select a user...")}
                     .fetchObjects=${async (query?: string): Promise<User[]> => {
                         const args: CoreUsersListRequest = {
                             ordering: "username",
