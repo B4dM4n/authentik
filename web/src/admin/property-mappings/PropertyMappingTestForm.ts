@@ -2,7 +2,7 @@ import "#elements/CodeMirror";
 import "#elements/forms/HorizontalFormElement";
 import "#elements/forms/SearchSelect/index";
 
-import { DEFAULT_CONFIG } from "#common/api/config";
+import { aki } from "#common/api/client";
 import { PFSize } from "#common/enums";
 
 import { Form } from "#elements/forms/Form";
@@ -42,7 +42,7 @@ export class PropertyMappingTestForm extends Form<PropertyMappingTestRequest> {
     public override cancelable = true;
     public override size = PFSize.XLarge;
 
-    #api = new PropertymappingsApi(DEFAULT_CONFIG);
+    #api = aki(PropertymappingsApi);
 
     protected override formatSubmitLabel(submitLabel?: string | null): string {
         return submitLabel || msg("Run Test");
@@ -192,7 +192,7 @@ export class PropertyMappingTestForm extends Form<PropertyMappingTestRequest> {
                         if (query !== undefined) {
                             args.search = query;
                         }
-                        const users = await new CoreApi(DEFAULT_CONFIG).coreUsersList(args);
+                        const users = await aki(CoreApi).coreUsersList(args);
                         return users.results;
                     }}
                     .renderElement=${(user: User): string => {
@@ -221,7 +221,7 @@ export class PropertyMappingTestForm extends Form<PropertyMappingTestRequest> {
                         if (query !== undefined) {
                             args.search = query;
                         }
-                        const groups = await new CoreApi(DEFAULT_CONFIG).coreGroupsList(args);
+                        const groups = await aki(CoreApi).coreGroupsList(args);
                         return groups.results;
                     }}
                     .renderElement=${(group: Group): string => {
@@ -238,26 +238,27 @@ export class PropertyMappingTestForm extends Form<PropertyMappingTestRequest> {
             </ak-form-element-horizontal>
             <ak-form-element-horizontal label=${msg("Provider")} name="provider">
                 <ak-search-select
+                    placeholder=${msg("Select a provider...")}
                     blankable
                     .fetchObjects=${async (query?: string): Promise<Provider[]> => {
-                            const args: ProvidersAllListRequest = {
-                                ordering: "name",
-                            };
-                            if (query !== undefined) {
-                                args.search = query;
-                            }
-                            const providers = await new ProvidersApi(DEFAULT_CONFIG).providersAllList(args);
-                            return providers.results;
-                        }}
+                        const args: ProvidersAllListRequest = {
+                            ordering: "name",
+                        };
+                        if (query !== undefined) {
+                            args.search = query;
+                        }
+                        const providers = await aki(ProvidersApi).providersAllList(args);
+                        return providers.results;
+                    }}
                     .renderElement=${(provider: Provider): string => {
-                            return provider.name;
-                        }}
-                    .value=${(provider: Provider | undefined): number | undefined => {
-                            return provider?.pk;
-                        }}
+                        return provider.name;
+                    }}
+                    .value=${(provider: Provider | undefined): string | undefined => {
+                        return provider?.pk;
+                    }}
                     .selected=${(provider: Provider): boolean => {
-                            return this.request?.provider?.toString() === provider.pk.toString();
-                        }}
+                        return this.request?.provider?.toString() === provider.pk.toString();
+                    }}
                 >
                 </ak-search-select>
             </ak-form-element-horizontal>
